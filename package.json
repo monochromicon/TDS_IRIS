@@ -1,0 +1,21 @@
+{
+  "name": "tds_iris",
+  "version": "0.0.1",
+  "description": "The IRIS takes a folder of Smarter Balanced assessment items as input, and loads them in an iframe. A compiled WAR file is hosted in the [Smarter Balanced artifactory](https://airdev.artifactoryonline.com/airdev). IRiS version 1.0.3 can be downloaded [here](https://airdev.artifactoryonline.com/airdev/libs-releases-local/org/opentestsystem/delivery/iris/1.0.3/iris-1.0.3.war).",
+  "private": true,
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monochromicon/TDS_IRIS.git"
+  },
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/monochromicon/TDS_IRIS/issues"
+  },
+  "homepage": "https://github.com/monochromicon/TDS_IRIS#readme"
+}
