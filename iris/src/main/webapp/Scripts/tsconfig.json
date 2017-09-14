@@ -1,0 +1,13 @@
+{
+  "compilierOptions": {
+    "target": "es5",
+    "lib": [
+      "dom"
+    ]
+  },
+  "types": [
+    "jquery",
+    "es6-promise"
+  ],
+  "compileOnSave": true
+}
