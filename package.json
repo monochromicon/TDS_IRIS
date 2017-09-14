@@ -29,5 +29,23 @@
     "tslint-config-prettier": "^1.5.0",
     "tslint-config-standard": "^6.0.1",
     "typescript": "^2.5.2"
+  },
+  "jest": {
+    "globals": {
+      "ts-jest": {
+        "tsConfigFile": "iris/src/main/webapp/Scripts/tsconfig.json"
+      }
+    },
+    "transform": {
+      "^.+\\.tsx?$": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "(/iris/src/main/webapp/Scripts/test/.*|(\\.|/)(test|spec)).(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json"
+    ]
   }
 }
