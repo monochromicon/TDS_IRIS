@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/monochromicon/TDS_IRIS/issues"
   },
-  "homepage": "https://github.com/monochromicon/TDS_IRIS#readme"
+  "homepage": "https://github.com/monochromicon/TDS_IRIS#readme",
+  "devDependencies": {
+    "prettier": "^1.7.0"
+  }
 }
