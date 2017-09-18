@@ -9,6 +9,7 @@
   "scripts": {
     "test:format": "prettier --single-quote --no-semi --parser typescript --print-width 120 --write iris/src/main/webapp/Scripts/**/*.ts",
     "test:lint": "tslint -c ./tslint.json -p iris/src/main/webapp/Scripts/tsconfig.json iris/src/main/webapp/Scripts/**/*.ts",
+    "lint": "npm run test:format && npm run test:lint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
