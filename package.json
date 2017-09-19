@@ -7,6 +7,9 @@
     "doc": "docs"
   },
   "scripts": {
+    "test:format": "prettier --single-quote --no-semi --parser typescript --print-width 120 --write iris/src/main/webapp/Scripts/**/*.ts",
+    "test:lint": "tslint -c ./tslint.json -p iris/src/main/webapp/Scripts/tsconfig.json --fix iris/src/main/webapp/Scripts/**/*.ts",
+    "lint": "npm run test:format && npm run test:lint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,7 +22,18 @@
   },
   "homepage": "https://github.com/monochromicon/TDS_IRIS#readme",
   "devDependencies": {
+    "prettier": "^1.7.0",
+    "tslint": "^5.7.0",
+    "tslint-config-prettier": "^1.5.0",
+    "tslint-config-standard": "^6.0.1",
+    "typescript": "^2.5.2",
     "@types/es6-promise": "0.0.33",
     "@types/jquery": "^3.2.12"
+  },
+  "prettier": {
+    "single-quote": true,
+    "semi": false,
+    "parser": "typescript",
+    "print-width": 120
   }
 }
