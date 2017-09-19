@@ -64,7 +64,7 @@ declare namespace Accommodations {
 }
 
 declare namespace Messages {
-  export function set(str1, str2, str3);
+  export function set(str1, str2, str3)
 }
 
 declare class ContentItem {

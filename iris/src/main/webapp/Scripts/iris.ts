@@ -1,582 +1,579 @@
-var isIrisReady = false;
+let isIrisReady = false
 //Adding this onto TDS for now so it is available in the dictionary handler.
-var irisUrl = location.href;
+let irisUrl = location.href
 // we load one page in advance, but we don't want that to cause a cascade of page show/load
-Blackbox.getConfig().preventShowOnLoad = true;
-Blackbox.getConfig().baseUrl = irisUrl;
-ContentManager.Dialog.urlFrame = "Pages/DialogFrame.aspx";
+Blackbox.getConfig().preventShowOnLoad = true
+Blackbox.getConfig().baseUrl = irisUrl
+ContentManager.Dialog.urlFrame = 'Pages/DialogFrame.aspx'
 //This sets read only mode on the content manager disabling the answer entry areas.
-CM.setReadOnly(true);
+CM.setReadOnly(true)
 
 // Functions that are used by toolbar buttons
 
 //Calculator
-var calculatorBtn = function(ev) {
-    var currentPage = ContentManager.getCurrentPage();
-    if (currentPage) {
-        Calculator.toggle();
-    }
-};
-var comments = function(ev){
-    var currentPage = ContentManager.getCurrentPage();
-    var currentItem = ContentManager.getCurrentEntity();
+let calculatorBtn = function(ev) {
+  let currentPage = ContentManager.getCurrentPage()
+  if (currentPage) {
+    Calculator.toggle()
+  }
+}
+let comments = function(ev) {
+  let currentPage = ContentManager.getCurrentPage()
+  let currentItem = ContentManager.getCurrentEntity()
 
-    if (currentPage && TDS.Notes && currentItem) {
-        var itemId = getItemId(currentItem);
-        TDS.Notes.open({"id": itemId, "type": TDS.Notes.Types.TextArea});
-    }
+  if (currentPage && TDS.Notes && currentItem) {
+    let itemId = getItemId(currentItem)
+    TDS.Notes.open({ id: itemId, type: TDS.Notes.Types.TextArea })
+  }
 }
 
 //Global Notes
-var globalNotesBtn = function(ev) {
-    var currentPage = ContentManager.getCurrentPage();
-    if (currentPage && TDS.Notes) {
-        TDS.Notes.open();
-    }
-};
+let globalNotesBtn = function(ev) {
+  let currentPage = ContentManager.getCurrentPage()
+  if (currentPage && TDS.Notes) {
+    TDS.Notes.open()
+  }
+}
 
 //Masking
-var showMask = function(ev) {
-    var currentPage = ContentManager.getCurrentPage();
-    if (currentPage) {
-        Masking.toggle();
-    }
-};
+let showMask = function(ev) {
+  let currentPage = ContentManager.getCurrentPage()
+  if (currentPage) {
+    Masking.toggle()
+  }
+}
 
-var dictionaryBtn = function(ev) {
-    var currentPage = ContentManager.getCurrentPage();
-    if (currentPage) {
-        Dictionary.toggle();
-    }
-};
+let dictionaryBtn = function(ev) {
+  let currentPage = ContentManager.getCurrentPage()
+  if (currentPage) {
+    Dictionary.toggle()
+  }
+}
 
 // setup cross domain api
-XDM.init(window);
+XDM.init(window)
 
 function getItemId(item) {
-    return "I-" + item.bankKey + "-" + item.itemKey;
+  return 'I-' + item.bankKey + '-' + item.itemKey
 }
 
 function getItemMap(requestedItems) {
-    var distinctItemCount = 0;
+  let distinctItemCount = 0
 
-    var itemMap = requestedItems.reduce(function (map, item) {
-        ++distinctItemCount;
-        map[getItemId(item)] = item;
-        return map;
-    }, {});
+  let itemMap = requestedItems.reduce(function(map, item) {
+    ++distinctItemCount
+    map[getItemId(item)] = item
+    return map
+  }, {})
 
-    if (requestedItems.length !== distinctItemCount) {
-        throw new Error('One or more of the requested items appears multiple times in this request.');
-    }
+  if (requestedItems.length !== distinctItemCount) {
+    throw new Error('One or more of the requested items appears multiple times in this request.')
+  }
 
-    return itemMap;
+  return itemMap
 }
 
 function getExistingPage(requestedItems) {
+  let requestedItemCount = Object.keys(requestedItems).length,
+    partialMatches = false,
+    matchedPage = null,
+    matchedItems = null
 
-    var requestedItemCount = Object.keys(requestedItems).length,
-        partialMatches = false,
-        matchedPage = null,
-        matchedItems = null;
+  // go through each page to try matching items
+  CM.getPages().forEach(function(page) {
+    let items = page.getItems(),
+      matches = []
 
-    // go through each page to try matching items
-    CM.getPages().forEach(function (page) {
-        var items = page.getItems(),
-            matches = [];
+    // check this page for items which are in the current content request
+    items.forEach(function(item) {
+      let itemId = getItemId(item),
+        matchedItem = requestedItems[itemId]
 
-        // check this page for items which are in the current content request
-        items.forEach(function (item) {
-            var itemId = getItemId(item),
-                matchedItem = requestedItems[itemId];
+      if (matchedItem) {
+        matches.push({
+          loaded: item,
+          requested: matchedItem
+        })
+      }
+    })
 
-            if (matchedItem) {
-                matches.push({
-                    loaded: item,
-                    requested: matchedItem
-                });
-            }
-        });
-
-        if (matches.length === items.length && items.length === requestedItemCount) {
-            // exact match, save the page and items
-            matchedPage = page;
-            matchedItems = matches;
-        } else if (matches.length) {
-            // only some items matched
-            partialMatches = true;
-        }
-    });
-
-    if (partialMatches) {
-        throw new Error('One or more of the items requested have already been loaded. Make sure the content request is the same as the orginal (e.g. it can\'t contain different response or label values).');
+    if (matches.length === items.length && items.length === requestedItemCount) {
+      // exact match, save the page and items
+      matchedPage = page
+      matchedItems = matches
+    } else if (matches.length) {
+      // only some items matched
+      partialMatches = true
     }
+  })
 
-    return {
-        page: matchedPage,
-        itemPairs: matchedItems
-    };
+  if (partialMatches) {
+    throw new Error(
+      "One or more of the items requested have already been loaded. Make sure the content request is the same as the orginal (e.g. it can't contain different response or label values)."
+    )
+  }
+
+  return {
+    page: matchedPage,
+    itemPairs: matchedItems
+  }
 }
 
-function isGlobalNotesEnabled(){
-    return TDS.getAccommodationProperties().existsAndNotEquals('Global Notes', 'TDS_GN0');
-
+function isGlobalNotesEnabled() {
+  return TDS.getAccommodationProperties().existsAndNotEquals('Global Notes', 'TDS_GN0')
 }
 
 function loadContent(xmlDoc) {
-    if (typeof xmlDoc == 'string') {
-        xmlDoc = Util.Xml.parseFromString(xmlDoc);
+  if (typeof xmlDoc == 'string') {
+    xmlDoc = Util.Xml.parseFromString(xmlDoc)
+  }
+
+  // create array of content json from the xml
+  let deferred = $.Deferred()
+  let contents = CM.Xml.create(xmlDoc)
+  let content = contents[0]
+
+  let itemMap = getItemMap(content.items)
+  let result = getExistingPage(itemMap)
+
+  //if the page is already loaded we want to force a reload because the accommodations may have changed.
+  if (result.page) {
+    // show the page
+    TDS.Dialog.hideProgress()
+    ContentManager.removePage(result.page)
+    // If there is a word list loaded clear the cached words because they may have changed.
+    if (WordListPanel) {
+      WordListPanel.clearCache()
     }
+  }
 
-    // create array of content json from the xml
-    var deferred = $.Deferred();
-    var contents = CM.Xml.create(xmlDoc);
-    var content = contents[0];
+  const page = CM.createPage(content)
 
-    var itemMap = getItemMap(content.items);
-    var result = getExistingPage(itemMap);
+  page.render()
+  page.once('loaded', function() {
+    TDS.Dialog.hideProgress()
+    CM.accessibilityEnabled = true
+    page.show()
+    CM.accessibilityEnabled = false
+    deferred.resolve()
+  })
 
-    //if the page is already loaded we want to force a reload because the accommodations may have changed.
-    if (result.page) {
-        // show the page
-        TDS.Dialog.hideProgress();
-        ContentManager.removePage(result.page);
-        // If there is a word list loaded clear the cached words because they may have changed.
-        if(WordListPanel){
-            WordListPanel.clearCache();
-        }
-    }
+  ContentManager.onItemEvent('comment', function(ev) {
+    comments(ev)
+  })
 
-    const page = CM.createPage(content);
+  if (TDS.getAccommodationProperties().hasMaskingEnabled()) {
+    Blackbox.showButton('btnMask', showMask, true)
+  }
 
-    page.render();
-    page.once('loaded', function () {
-        TDS.Dialog.hideProgress();
-        CM.accessibilityEnabled = true;
-        page.show();
-        CM.accessibilityEnabled = false;
-        deferred.resolve();
-    });
+  if (isGlobalNotesEnabled()) {
+    Blackbox.showButton('btnGlobalNotes', globalNotesBtn, true)
+  }
+  if (TDS.getAccommodationProperties().hasCalculator()) {
+    Blackbox.showButton('btnCalculator', calculatorBtn, true)
+  }
 
-    ContentManager.onItemEvent("comment", function(ev) {
-        comments(ev);
-    });
+  if (TDS.getAccommodationProperties().isDictionaryEnabled()) {
+    Blackbox.showButton('btnDictionary', dictionaryBtn, true)
+  }
 
-    if (TDS.getAccommodationProperties().hasMaskingEnabled()) {
-        Blackbox.showButton('btnMask', showMask, true);
-    }
-
-    if(isGlobalNotesEnabled()){
-        Blackbox.showButton('btnGlobalNotes', globalNotesBtn, true);
-    }
-    if (TDS.getAccommodationProperties().hasCalculator()) {
-        Blackbox.showButton('btnCalculator', calculatorBtn, true);
-    }
-
-    if (TDS.getAccommodationProperties().isDictionaryEnabled()) {
-        Blackbox.showButton('btnDictionary', dictionaryBtn, true);
-    }
-
-    if (TDS.getAccommodationProperties().showItemToolsMenu()) {
-        $(".itemTools").addClass("toolsContainer");
-    }
-    /*
+  if (TDS.getAccommodationProperties().showItemToolsMenu()) {
+    $('.itemTools').addClass('toolsContainer')
+  }
+  /*
      If the print size is specified we need to set it because the previous
      If not set it to zero because this may not be the first item we are loading and the zoom level
      may have been set when we loaded an item earlier.
      */
-    var printSize = CM.getAccProps().getPrintSize();
-    if(printSize) {
-        CM.getZoom().setLevel(printSize, true);
-    } else {
-        CM.getZoom().setLevel(0, true);
-    }
-    Blackbox.bindUIEvents();
+  let printSize = CM.getAccProps().getPrintSize()
+  if (printSize) {
+    CM.getZoom().setLevel(printSize, true)
+  } else {
+    CM.getZoom().setLevel(0, true)
+  }
+  Blackbox.bindUIEvents()
 
-    return deferred.promise();
+  return deferred.promise()
 }
 
-var loadedDefaultAccommodations = false;
+let loadedDefaultAccommodations = false
 
 function parseAccommodations(segmentId, position, label, segmentEl) {
-    var types = [];
+  let types = []
 
-    $(segmentEl).find('accommodation').each(function () {
-        var $this = $(this);
+  $(segmentEl)
+    .find('accommodation')
+    .each(function() {
+      let $this = $(this)
 
-        types.push({
-            name: $this.attr('type'),
+      types.push({
+        name: $this.attr('type'),
 
-            values: [{
-                name: $this.attr('name'),
-                code: $this.attr('code'),
-                selected: $this.attr('selected') === 'true',
-                isDefault: true
-            }]
-        });
-    });
+        values: [
+          {
+            name: $this.attr('name'),
+            code: $this.attr('code'),
+            selected: $this.attr('selected') === 'true',
+            isDefault: true
+          }
+        ]
+      })
+    })
 
-    // clone default accommodations
-    var accs = Accommodations.Manager.getDefault().clone();
+  // clone default accommodations
+  let accs = Accommodations.Manager.getDefault().clone()
 
-    // overwrite with segment-specific accommodations
-    accs.importJson({
-        id: segmentId,
-        position: position,
-        label: label,
-        types: types
-    });
+  // overwrite with segment-specific accommodations
+  accs.importJson({
+    id: segmentId,
+    position: position,
+    label: label,
+    types: types
+  })
 
-    // se the first segment's accommodations as default
-    if (!loadedDefaultAccommodations) {
-        loadedDefaultAccommodations = true;
-        Accommodations.Manager.setDefault(segmentId);
-    }
+  // se the first segment's accommodations as default
+  if (!loadedDefaultAccommodations) {
+    loadedDefaultAccommodations = true
+    Accommodations.Manager.setDefault(segmentId)
+  }
 
-    return accs;
+  return accs
 }
 
 function loadGroupedContent(xmlDoc) {
-    if (CM.getPages().length > 0) {
-        throw new Error("content has already been loaded; cannot load grouped content");
-    }
+  if (CM.getPages().length > 0) {
+    throw new Error('content has already been loaded; cannot load grouped content')
+  }
 
-    if (typeof xmlDoc == 'string') {
-        xmlDoc = Util.Xml.parseFromString(xmlDoc);
-    }
+  if (typeof xmlDoc == 'string') {
+    xmlDoc = Util.Xml.parseFromString(xmlDoc)
+  }
 
-    $(xmlDoc).find('segment').each(function () {
+  $(xmlDoc)
+    .find('segment')
+    .each(function() {
+      let segmentId = $(this).attr('id')
 
-        var segmentId = $(this).attr('id');
+      // parse accommodations
+      let accommodations = parseAccommodations(segmentId, 'position', 'label', this)
+      Accommodations.Manager.add(accommodations)
 
-        // parse accommodations
-        var accommodations = parseAccommodations(segmentId, 'position', 'label', this);
-        Accommodations.Manager.add(accommodations);
+      // parse content
+      let contents = CM.Xml.create(this)
+      for (let i = 0; i < contents.length; ++i) {
+        let content = contents[i]
+        let page = CM.createPage(content)
 
-        // parse content
-        var contents = CM.Xml.create(this);
-        for (var i = 0; i < contents.length; ++i) {
-            var content = contents[i];
-            var page = CM.createPage(content);
+        // when a page is shown, we want to begin rendering the following page
+        page.once('show', function() {
+          let pages = CM.getPages(),
+            nextPageIndex = pages.indexOf(this) + 1,
+            nextPage = pages[nextPageIndex]
 
-            // when a page is shown, we want to begin rendering the following page
-            page.once('show', function () {
-                var pages = CM.getPages(),
-                    nextPageIndex = pages.indexOf(this) + 1,
-                    nextPage = pages[nextPageIndex];
+          if (nextPage) {
+            nextPage.render()
+          }
+        })
+      }
+    })
 
-                if (nextPage) {
-                    nextPage.render();
-                }
-            });
-        }
-    });
+  // render the first page, and notify the caller when it is ready
+  let pages = CM.getPages(),
+    pageCount = pages.length,
+    firstPage = pages[0],
+    deferred = $.Deferred()
 
-    // render the first page, and notify the caller when it is ready
-    var pages = CM.getPages(),
-        pageCount = pages.length,
-        firstPage = pages[0],
-        deferred = $.Deferred();
+  firstPage.once('loaded', function() {
+    deferred.resolve()
 
-    firstPage.once('loaded', function () {
-        deferred.resolve();
+    TDS.Dialog.hideProgress()
+    firstPage.show()
 
-        TDS.Dialog.hideProgress();
-        firstPage.show();
+    let navigability = getNavigability()
+    sendNavUpdate(navigability)
+  })
 
-        var navigability = getNavigability();
-        sendNavUpdate(navigability);
-    });
+  firstPage.render()
 
-    firstPage.render();
-
-    return deferred.promise();
+  return deferred.promise()
 }
 
 //function that is passed to Blackbox.changeAccommodations to modify the accommodations
 //in our case we just want to clear out any accommodations that are set.
 function clearAccommodations(accoms) {
-    accoms.clear()
+  accoms.clear()
 }
 
 //parses any accommodations from the token, and sets them on the Blackbox.
 function setAccommodations(token) {
-    var parsed = JSON.parse(token);
-    //Call changeAccommodations once to reset all accommodations to their default values
-    Blackbox.changeAccommodations(clearAccommodations);
-    if(parsed.hasOwnProperty('accommodations')) {
-        Blackbox.setAccommodations(parsed['accommodations']);
-        //Call changeAccommodations a second time to apply the new accommodations that were set
-        //by setAccommodations
-        Blackbox.changeAccommodations(function(accoms){})
-    }
+  let parsed = JSON.parse(token)
+  //Call changeAccommodations once to reset all accommodations to their default values
+  Blackbox.changeAccommodations(clearAccommodations)
+  if (parsed.hasOwnProperty('accommodations')) {
+    Blackbox.setAccommodations(parsed['accommodations'])
+    //Call changeAccommodations a second time to apply the new accommodations that were set
+    //by setAccommodations
+    Blackbox.changeAccommodations(function(accoms) {})
+  }
 }
 
 function loadToken(vendorId, token) {
-   var deferred = $.Deferred();
-   blackBoxReady.then(function(){
-       loadContentPromise(vendorId, token)
-           .then(function(value) {
-               deferred.resolve(value)
-           })
-           .catch(function(error){
-               var errorMsg = "error: " + error + " with loading token " + token;
-               console.log(errorMsg);
-               deferred.reject(errorMsg);
-           }
-       );
-   });
-   return deferred;
+  let deferred = $.Deferred()
+  blackBoxReady.then(function() {
+    loadContentPromise(vendorId, token)
+      .then(function(value) {
+        deferred.resolve(value)
+      })
+      .catch(function(error) {
+        let errorMsg = 'error: ' + error + ' with loading token ' + token
+        console.log(errorMsg)
+        deferred.reject(errorMsg)
+      })
+  })
+  return deferred
 }
 
-var loadContentPromise = function(vendorId, token){
-    return new Promise(
-        function(resolve, reject ) {
-            Messages.set('TDS.WordList.illustration', 'Illustration', 'ENU');
-            TDS.Dialog.showProgress();
-            setAccommodations(token);
-            var url = irisUrl + '/Pages/API/content/load?id=' + vendorId;
-            $.post(url, token, null, 'xml').then(function (data) {
-                loadContent(data).then(resolve);
-            }).fail(function (xhr, status, error){
-                TDS.Dialog.hideProgress();
-                reject(error);
-            });
-        }
-    );
-
-};
+let loadContentPromise = function(vendorId, token) {
+  return new Promise(function(resolve, reject) {
+    Messages.set('TDS.WordList.illustration', 'Illustration', 'ENU')
+    TDS.Dialog.showProgress()
+    setAccommodations(token)
+    let url = irisUrl + '/Pages/API/content/load?id=' + vendorId
+    $.post(url, token, null, 'xml')
+      .then(function(data) {
+        loadContent(data).then(resolve)
+      })
+      .fail(function(xhr, status, error) {
+        TDS.Dialog.hideProgress()
+        reject(error)
+      })
+  })
+}
 
 function loadGroupedContentToken(vendorId, token) {
-    var deferred = $.Deferred();
-    blackBoxReady.then(function(){
-        return loadGroupedContentTokenPromise(vendorId, token)
-            .then(function(value) {
-                deferred.resolve(value);
-            })
-            .catch(function(error){
-                var errorMsg = "error: " + error + " with loading token " + token;
-                console.log(errorMsg);
-                deferred.reject(errorMsg);
-            }
-        );
-    });
-    return deferred;
+  let deferred = $.Deferred()
+  blackBoxReady.then(function() {
+    return loadGroupedContentTokenPromise(vendorId, token)
+      .then(function(value) {
+        deferred.resolve(value)
+      })
+      .catch(function(error) {
+        let errorMsg = 'error: ' + error + ' with loading token ' + token
+        console.log(errorMsg)
+        deferred.reject(errorMsg)
+      })
+  })
+  return deferred
 }
 
-  var loadGroupedContentTokenPromise = function(vendorId, token){
-    return new Promise(
-        function(resolve, reject ) {
-            TDS.Dialog.showProgress();
-            setAccommodations(token);
-            var url = location.href + '/Pages/API/content/loadContent?id=' + vendorId;
-            $.post(url, token, null, 'json').then(function (data) {
-                 loadGroupedContent(data).then(resolve);
-            }).fail(function (xhr, status, error){
-                TDS.Dialog.hideProgress();
-                reject(error);
-            });
-        }
-    );
-};
+let loadGroupedContentTokenPromise = function(vendorId, token) {
+  return new Promise(function(resolve, reject) {
+    TDS.Dialog.showProgress()
+    setAccommodations(token)
+    let url = location.href + '/Pages/API/content/loadContent?id=' + vendorId
+    $.post(url, token, null, 'json')
+      .then(function(data) {
+        loadGroupedContent(data).then(resolve)
+      })
+      .fail(function(xhr, status, error) {
+        TDS.Dialog.hideProgress()
+        reject(error)
+      })
+  })
+}
 
-var blackBoxReady = new Promise(
-    function(resolve){
-        if(isIrisReady){
-            resolve(true);
-        }else{
-            Blackbox.events.on('ready', function () {
-                resolve(true);
-            });
-        }
-    }
-);
+let blackBoxReady = new Promise(function(resolve) {
+  if (isIrisReady) {
+    resolve(true)
+  } else {
+    Blackbox.events.on('ready', function() {
+      resolve(true)
+    })
+  }
+})
 
 function setItemResponse(item, response) {
-    if (item && item instanceof ContentItem) {
-        itemResponseReady(item)
-            .then(function(){
-                item.setResponse(response)
-            })
-            .catch(function(err){
-                console.error(err)
-            });
-    } else {
-        throw new Error('invalid item; could not set response');
-    }
+  if (item && item instanceof ContentItem) {
+    itemResponseReady(item)
+      .then(function() {
+        item.setResponse(response)
+      })
+      .catch(function(err) {
+        console.error(err)
+      })
+  } else {
+    throw new Error('invalid item; could not set response')
+  }
 }
 
 function setItemLabel(item, label) {
-    if (item && item instanceof ContentItem) {
-        item.setQuestionLabel(label);
-    } else {
-        throw new Error('invalid item; could not set label');
-    }
+  if (item && item instanceof ContentItem) {
+    item.setQuestionLabel(label)
+  } else {
+    throw new Error('invalid item; could not set label')
+  }
 }
 
 function setResponse(value) {
-    var entity = CM.getCurrentPage().getActiveEntity();
-    //Begin Hack: 1327 remove <p> from response with prev/next button
-    while(value.search("&amp;")!=-1) // '&' comes as '&amp;amp;' in response
-      value = value.replace("&amp;", "&");
-value = $('<div/>').html(value).text();
-while(value.search("<p>")!=-1)
-  value = value.replace ("<p>", "");
-while(value.search("</p>")!=-1)
-  value = value.replace ("</p>", "</br>");
-//End Hack
-    setItemResponse(entity, value);
+  let entity = CM.getCurrentPage().getActiveEntity()
+  //Begin Hack: 1327 remove <p> from response with prev/next button
+  while (
+    value.search('&amp;') != -1 // '&' comes as '&amp;amp;' in response
+  )
+    value = value.replace('&amp;', '&')
+  value = $('<div/>')
+    .html(value)
+    .text()
+  while (value.search('<p>') != -1) value = value.replace('<p>', '')
+  while (value.search('</p>') != -1) value = value.replace('</p>', '</br>')
+  //End Hack
+  setItemResponse(entity, value)
 }
 
 function setResponses(itemResponses) {
-    var items = CM.getCurrentPage().getItems();
-    itemResponses.forEach(function (itemResponse) {
-        var itemFromPosition, itemFromId;
-        if (typeof itemResponse.position === 'number') {
-            itemFromPosition = items[itemResponse.position - 1];
-        }
+  let items = CM.getCurrentPage().getItems()
+  itemResponses.forEach(function(itemResponse) {
+    let itemFromPosition, itemFromId
+    if (typeof itemResponse.position === 'number') {
+      itemFromPosition = items[itemResponse.position - 1]
+    }
 
-        if (itemResponse.id) {
-            itemFromId = items.filter(function (item) {
-                var itemId = getItemId(item);
-                return itemId === itemResponse.id;
-            })[0];
-        }
+    if (itemResponse.id) {
+      itemFromId = items.filter(function(item) {
+        let itemId = getItemId(item)
+        return itemId === itemResponse.id
+      })[0]
+    }
 
-        if (itemFromPosition && itemFromId && itemFromPosition !== itemFromId) {
-            throw new Error('item position and id do not match');
-        }
+    if (itemFromPosition && itemFromId && itemFromPosition !== itemFromId) {
+      throw new Error('item position and id do not match')
+    }
 
-        if (typeof itemResponse.response !== "undefined") {
-            setItemResponse( itemFromPosition || itemFromId, itemResponse.response );
-        }
+    if (typeof itemResponse.response !== 'undefined') {
+      setItemResponse(itemFromPosition || itemFromId, itemResponse.response)
+    }
 
-        if (itemResponse.label) {
-            setItemLabel(itemFromPosition || itemFromId, itemResponse.label);
-        }
-    });
+    if (itemResponse.label) {
+      setItemLabel(itemFromPosition || itemFromId, itemResponse.label)
+    }
+  })
 }
 
 //Checks if item response can be set otherwise waits for fired widget instanceReady event
-var itemResponseReady = function(item){
-    return new Promise(
-        function(resolve, reject){
-            if(item && CKEDITOR){
-                if(item.isResponseAvailable()){
-                    resolve(true);
-                }else{
-                    CKEDITOR.on('instanceReady', function(){
-                        resolve(true);});
-                }
-            }else{
-                reject('item and/or editor cannot be undefined');
-            }
-        }
-    );
+let itemResponseReady = function(item) {
+  return new Promise(function(resolve, reject) {
+    if (item && CKEDITOR) {
+      if (item.isResponseAvailable()) {
+        resolve(true)
+      } else {
+        CKEDITOR.on('instanceReady', function() {
+          resolve(true)
+        })
+      }
+    } else {
+      reject('item and/or editor cannot be undefined')
+    }
+  })
 }
 
 function getResponse() {
-    var entity = CM.getCurrentPage().getActiveEntity();
-    if (entity instanceof ContentItem) {
-        return entity.getResponse().value;
-    }
-    return null;
+  let entity = CM.getCurrentPage().getActiveEntity()
+  if (entity instanceof ContentItem) {
+    return entity.getResponse().value
+  }
+  return null
 }
 
 function getIndexOfCurrentPage() {
-    var currentPage = CM.getCurrentPage(),
-        pages = CM.getPages(),
-        index = pages.indexOf(currentPage);
+  let currentPage = CM.getCurrentPage(),
+    pages = CM.getPages(),
+    index = pages.indexOf(currentPage)
 }
 
 function getNavigability() {
-    var n = {
-        pages: null,
-        index: 0,
+  let n = {
+    pages: null,
+    index: 0,
 
-        haveNextPage: false,
-        haveNextPaginatedItem: false,
+    haveNextPage: false,
+    haveNextPaginatedItem: false,
 
-        havePrevPage: false,
-        havePrevPaginatedItem: false,
+    havePrevPage: false,
+    havePrevPaginatedItem: false,
 
-        update: function () {
-            this.haveNextPage = false;
-            this.haveNextPaginatedItem = false;
-            this.havePrevPage = false;
-            this.havePrevPaginatedItem = false;
+    update: function() {
+      this.haveNextPage = false
+      this.haveNextPaginatedItem = false
+      this.havePrevPage = false
+      this.havePrevPaginatedItem = false
 
-            var currentPage = CM.getCurrentPage();
+      let currentPage = CM.getCurrentPage()
+      ;(this.pages = this.pages || CM.getPages()), (this.index = this.pages.indexOf(currentPage))
 
-            this.pages = this.pages || CM.getPages(),
-            this.index = this.pages.indexOf(currentPage);
+      this.haveNextPage = this.index < this.pages.length - 1
+      this.havePrevPage = this.index > 0
 
-            this.haveNextPage = this.index < this.pages.length - 1;
-            this.havePrevPage = this.index > 0;
+      let pagination = currentPage.plugins.get('pagination')
 
-            var pagination = currentPage.plugins.get('pagination');
+      if (pagination) {
+        this.haveNextPaginatedItem = pagination.haveNext()
+        this.havePrevPaginatedItem = pagination.havePrev()
+      }
+    }
+  }
 
-            if (pagination) {
-                this.haveNextPaginatedItem = pagination.haveNext();
-                this.havePrevPaginatedItem = pagination.havePrev();
-            }
-        }
-    };
+  n.update()
 
-    n.update();
-
-    return n;
+  return n
 }
 
 function go(direction) {
-    var n = getNavigability();
+  let n = getNavigability()
 
-    // too easy to take wrong branch if we use terse logic here,
-    // so we'll just use the clear version
+  // too easy to take wrong branch if we use terse logic here,
+  // so we'll just use the clear version
 
-    if (direction === 'next' && n.haveNextPaginatedItem) {
-        CM.requestNextPage()
-    }
-    else if (direction === 'prev' && n.havePrevPaginatedItem) {
-        CM.requestPreviousPage();
-    }
-    else if (direction === 'next' && n.haveNextPage) {
-        n.pages[++n.index].show();
-    }
-    else if (direction === 'prev' && n.havePrevPage) {
-        n.pages[--n.index].show();
-    }
+  if (direction === 'next' && n.haveNextPaginatedItem) {
+    CM.requestNextPage()
+  } else if (direction === 'prev' && n.havePrevPaginatedItem) {
+    CM.requestPreviousPage()
+  } else if (direction === 'next' && n.haveNextPage) {
+    n.pages[++n.index].show()
+  } else if (direction === 'prev' && n.havePrevPage) {
+    n.pages[--n.index].show()
+  }
 
-    n.update();
-    sendNavUpdate(n);
+  n.update()
+  sendNavUpdate(n)
 }
 
 function showNext() {
-    go('next');
+  go('next')
 }
 
 function showPrev() {
-    go('prev');
+  go('prev')
 }
 
 function sendNavUpdate(navigability) {
-    var n = navigability;
-    XDM(window.parent).post('IRiS:navUpdate',
-        n.havePrevPage || n.havePrevPaginatedItem,
-        n.haveNextPage || n.haveNextPaginatedItem
-    );
+  let n = navigability
+  XDM(window.parent).post(
+    'IRiS:navUpdate',
+    n.havePrevPage || n.havePrevPaginatedItem,
+    n.haveNextPage || n.haveNextPaginatedItem
+  )
 }
 
-XDM.addListener('IRiS:loadToken', loadToken);
-XDM.addListener('IRiS:loadContent', loadGroupedContentToken);
-XDM.addListener('IRiS:getResponse', getResponse);
-XDM.addListener('IRiS:setResponse', setResponse);
-XDM.addListener('IRiS:setResponses', setResponses);
+XDM.addListener('IRiS:loadToken', loadToken)
+XDM.addListener('IRiS:loadContent', loadGroupedContentToken)
+XDM.addListener('IRiS:getResponse', getResponse)
+XDM.addListener('IRiS:setResponse', setResponse)
+XDM.addListener('IRiS:setResponses', setResponses)
 
-XDM.addListener('IRiS:showNext', showNext);
-XDM.addListener('IRiS:showPrev', showPrev);
+XDM.addListener('IRiS:showNext', showNext)
+XDM.addListener('IRiS:showPrev', showPrev)
 
-Blackbox.events.on('ready', function () {
-    Blackbox.fireEvent('IRiS:Ready')
-    isIrisReady = true;
-});
+Blackbox.events.on('ready', function() {
+  Blackbox.fireEvent('IRiS:Ready')
+  isIrisReady = true
+})
