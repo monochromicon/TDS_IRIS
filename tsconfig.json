@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "strictNullChecks": true,
+    "lib": [
+      "dom",
+      "es5"
+    ],
+    "types": [
+      "jquery",
+      "es6-promise"
+    ]
+  },
+  "compileOnSave": true
+}

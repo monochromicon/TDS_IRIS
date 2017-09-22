@@ -7,7 +7,7 @@
 	<!-- Required by CTB and only scripts required for reference purposes -->
 	<tds:ScriptLink source="~/Scripts/Libraries/jquery/jquery-1.10.2.min.js" type="text/javascript"></tds:ScriptLink>
 	<tds:ScriptLink source="~/Scripts/Utilities/util_xdm.js" type="text/javascript"></tds:ScriptLink>
-	<tds:ScriptLink source="~/Scripts/client.js" type="text/javascript"></tds:ScriptLink>
+	<tds:ScriptLink source="~/Scripts/entry-sample.js" type="text/javascript"></tds:ScriptLink>
 	 <!--Styling for this page only and not for IRiS interface. -->
 	<tds:CSSLink href="~/IrisStyles/style.css" media="screen" type="text/css" rel="stylesheet" />
 	<tds:CSSLink href="~/IrisStyles/pagenavi-css.css" media="screen" type="text/css" rel="stylesheet" />
@@ -60,7 +60,7 @@
 			<!-- IriS viewport -->
 			<!-- Note: Change the src below to whatever IRiS website you want to use.
 				Please now how the url only contains the context/application name and not
-				a page url and is terminated with a "/". This is required. Scripts use 
+				a page url and is terminated with a "/". This is required. Scripts use
 				this root URL to create XHR end points and resources.
 			 -->
 			<iframe src="#{request.contextPath}/" width="1000" height="650" frameBorder="0"></iframe>

@@ -55,6 +55,9 @@
 	<tds:CSSLink href="~/Scripts/Moogle/CSS/moogle.css" media="screen" type="text/css" rel="stylesheet" />
 	<tds:CSSLink href="~/Scripts/Audio2/ClosedCaptioning.css" media="screen" type="text/css" rel="stylesheet" />
 
+	<!-- promise polyfill for IE -->
+	<script src="https://cdn.jsdelivr.net/npm/es6-promise"></script>
+
 	<!-- Blackbox Config -->
 	<script type="text/javascript">
         var blackboxConfig = {
@@ -67,7 +70,7 @@
 	<tds:ScriptLink type="text/javascript" source="~/Scripts/iris.combined.min.js" />
 	<!-- Required by CTB -->
 
-	<tds:ScriptLink source="~/Scripts/iris.js" type="text/javascript"></tds:ScriptLink>
+	<tds:ScriptLink source="~/Scripts/entry-index.js" type="text/javascript"></tds:ScriptLink>
 
 </h:head>
 <h:body>
