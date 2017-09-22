@@ -68,9 +68,7 @@ function getItemMap(requestedItems) {
   }, {})
 
   if (requestedItems.length !== distinctItemCount) {
-    throw new Error(
-      'One or more of the requested items appears multiple times in this request.'
-    )
+    throw new Error('One or more of the requested items appears multiple times in this request.')
   }
 
   return itemMap
@@ -85,7 +83,7 @@ function getExistingPage(requestedItems) {
   // go through each page to try matching items
   CM.getPages().forEach(page => {
     const items = page.getItems()
-    const matches = []
+    const matches: Object[] = []
 
     // check this page for items which are in the current content request
     items.forEach(function(item) {
@@ -100,10 +98,7 @@ function getExistingPage(requestedItems) {
       }
     })
 
-    if (
-      matches.length === items.length &&
-      items.length === requestedItemCount
-    ) {
+    if (matches.length === items.length && items.length === requestedItemCount) {
       // exact match, save the page and items
       matchedPage = page
       matchedItems = matches
@@ -126,10 +121,7 @@ function getExistingPage(requestedItems) {
 }
 
 function isGlobalNotesEnabled() {
-  return TDS.getAccommodationProperties().existsAndNotEquals(
-    'Global Notes',
-    'TDS_GN0'
-  )
+  return TDS.getAccommodationProperties().existsAndNotEquals('Global Notes', 'TDS_GN0')
 }
 
 function loadContent(xmlDoc) {
@@ -209,16 +201,14 @@ function loadContent(xmlDoc) {
 let loadedDefaultAccommodations = false
 
 function parseAccommodations(segmentId, position, label, segmentEl) {
-  const types = []
+  const types: Object[] = []
 
   $(segmentEl)
     .find('accommodation')
     .each(function() {
       const $this = $(this)
-
       types.push({
         name: $this.attr('type'),
-
         values: [
           {
             name: $this.attr('name'),
@@ -252,9 +242,7 @@ function parseAccommodations(segmentId, position, label, segmentEl) {
 
 function loadGroupedContent(xmlDoc) {
   if (CM.getPages().length > 0) {
-    throw new Error(
-      'content has already been loaded; cannot load grouped content'
-    )
+    throw new Error('content has already been loaded; cannot load grouped content')
   }
 
   if (typeof xmlDoc === 'string') {
@@ -267,12 +255,7 @@ function loadGroupedContent(xmlDoc) {
       const segmentId = $(this).attr('id')
 
       // parse accommodations
-      const accommodations = parseAccommodations(
-        segmentId,
-        'position',
-        'label',
-        this
-      )
+      const accommodations = parseAccommodations(segmentId, 'position', 'label', this)
       Accommodations.Manager.add(accommodations)
 
       // parse content
@@ -296,7 +279,6 @@ function loadGroupedContent(xmlDoc) {
 
   // render the first page, and notify the caller when it is ready
   const pages = CM.getPages()
-  const pageCount = pages.length
   const firstPage = pages[0]
   const deferred = $.Deferred()
 
@@ -330,60 +312,65 @@ function setAccommodations(token) {
     Blackbox.setAccommodations(parsed['accommodations'])
     // Call changeAccommodations a second time to apply the new accommodations that were set
     // by setAccommodations
-    Blackbox.changeAccommodations(accoms => {return null})
+    Blackbox.changeAccommodations(accoms => {
+      return null
+    })
   }
 }
 
+const blackBoxReady = new Promise(resolve => {
+  if (isIrisReady) {
+    resolve(true)
+  } else {
+    Blackbox.events.on('ready', () => {
+      resolve(true)
+    })
+  }
+})
+
+function pToDeferred(p) {
+  let d = $.Deferred()
+  p.then(
+    function(val) {
+      d.resolve(val)
+    },
+    function(err) {
+      d.reject(err)
+    }
+  )
+  return d.promise()
+}
+
 function loadToken(vendorId, token) {
-  const deferred = $.Deferred()
-  blackBoxReady.then(() => {
-    loadContentPromise(vendorId, token)
-      .then(function(value) {
-        deferred.resolve(value)
-      })
-      .catch(error => {
-        const errorMsg = `error: ${error} with loading token ${token}`
-        console.log(errorMsg)
-        deferred.reject(errorMsg)
-      })
-  })
-  return deferred
+  return pToDeferred(
+    blackBoxReady.then(() => loadContentPromise(vendorId, token)).catch(err => {
+      throw new Error(`error: ${err} with loading token ${token}`)
+    })
+  )
 }
 
 function loadContentPromise(vendorId, token) {
-  return new Promise((resolve, reject) => {
-    Messages.set('TDS.WordList.illustration', 'Illustration', 'ENU')
-    TDS.Dialog.showProgress()
-    setAccommodations(token)
-    const url = `${irisUrl}/Pages/API/content/load?id=${vendorId}`
-    $.post(url, token, null, 'xml')
-      .then(data => {
-        loadContent(data).then(resolve)
-      })
-      .fail((xhr, status, error) => {
-        TDS.Dialog.hideProgress()
-        reject(error)
-      })
-  })
+  Messages.set('TDS.WordList.illustration', 'Illustration', 'ENU')
+  TDS.Dialog.showProgress()
+  setAccommodations(token)
+  const url = `${irisUrl}/Pages/API/content/load?id=${vendorId}`
+  return $.post(url, token, null, 'xml')
+    .then(data => loadContent(data))
+    .fail((xhr, status, error) => {
+      TDS.Dialog.hideProgress()
+      throw error
+    })
 }
 
 function loadGroupedContentToken(vendorId, token) {
-  const deferred = $.Deferred()
-  blackBoxReady.then(() => {
-    return loadGroupedContentTokenPromise(vendorId, token)
-      .then(value => {
-        deferred.resolve(value)
-      })
-      .catch(error => {
-        const errorMsg = `error: ${error} with loading token ${token}`
-        console.log(errorMsg)
-        deferred.reject(errorMsg)
-      })
-  })
-  return deferred
+  return pToDeferred(
+    blackBoxReady.then(() => loadGroupedContentToken(vendorId, token)).catch(err => {
+      throw new Error(`error: ${err} with loading token ${token}`)
+    })
+  )
 }
 
-function loadGroupedContentTokenPromise (vendorId, token) {
+function loadGroupedContentTokenPromise(vendorId, token) {
   return new Promise((resolve, reject) => {
     TDS.Dialog.showProgress()
     setAccommodations(token)
@@ -399,15 +386,22 @@ function loadGroupedContentTokenPromise (vendorId, token) {
   })
 }
 
-const blackBoxReady = new Promise(resolve => {
-  if (isIrisReady) {
-    resolve(true)
-  } else {
-    Blackbox.events.on('ready', () => {
-      resolve(true)
-    })
-  }
-})
+// Checks if item response can be set otherwise waits for fired widget instanceReady event
+let itemResponseReady = item => {
+  return new Promise((resolve, reject) => {
+    if (item && CKEDITOR) {
+      if (item.isResponseAvailable()) {
+        resolve(true)
+      } else {
+        CKEDITOR.on('instanceReady', () => {
+          resolve(true)
+        })
+      }
+    } else {
+      reject('item and/or editor cannot be undefined')
+    }
+  })
+}
 
 function setItemResponse(item, response) {
   if (item && item instanceof ContentItem) {
@@ -436,8 +430,7 @@ function setResponse(value) {
   // Begin Hack: 1327 remove <p> from response with prev/next button
   while (
     value.search('&amp;') !== -1 // '&' comes as '&amp;amp;' in response
-  )
-  {
+  ) {
     value = value.replace('&amp;', '&')
   }
   value = $('<div/>')
@@ -479,23 +472,6 @@ function setResponses(itemResponses) {
   })
 }
 
-// Checks if item response can be set otherwise waits for fired widget instanceReady event
-let itemResponseReady = item => {
-  return new Promise((resolve, reject) => {
-    if (item && CKEDITOR) {
-      if (item.isResponseAvailable()) {
-        resolve(true)
-      } else {
-        CKEDITOR.on('instanceReady', () => {
-          resolve(true)
-        })
-      }
-    } else {
-      reject('item and/or editor cannot be undefined')
-    }
-  })
-}
-
 function getResponse() {
   const entity = CM.getCurrentPage().getActiveEntity()
   if (entity instanceof ContentItem) {
@@ -504,15 +480,10 @@ function getResponse() {
   return null
 }
 
-function getIndexOfCurrentPage() {
-  const currentPage = CM.getCurrentPage()
-  const pages = CM.getPages()
-  const index = pages.indexOf(currentPage)
-}
-
 function getNavigability() {
+  const pages: any[] = []
   const n = {
-    pages: null,
+    pages,
     index: 0,
 
     haveNextPage: false,
